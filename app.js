@@ -28,8 +28,8 @@ app.use(function (req, res, next) {
     next();
 });
 
-// Mongoose.connect("mongodb://localhost:27017/rent");
-Mongoose.connect("mongodb+srv://dbcm:dbcm@clustermy-zwohv.mongodb.net/rent?retryWrites=true&w=majority")
+Mongoose.connect("mongodb://localhost:27017/rent");
+// Mongoose.connect("mongodb+srv://dbcm:dbcm@clustermy-zwohv.mongodb.net/rent?retryWrites=true&w=majority")
 const UserModel = Mongoose.model("users",{
     fname:String,
     uemail:String,
@@ -47,14 +47,51 @@ const UserModel = Mongoose.model("users",{
     }
 });
  
-const CarModel = Mongoose.model("car",{
+const CarModel = Mongoose.model("carsses",{
     cname:String,
     cmodel:String,
     crent:String,
     cpicture:String,
     cdesc:String,
-    cfuel:String
+    cfuel:String,
+    fdate:String,
+    tdate:String,
+
+    cstatus:{
+        type:Number,
+        default:0
+    }
 });
+const BookModel = Mongoose.model("car",{
+    cname:String,
+    cmodel:String,
+    crent:String,
+    cpicture:String,
+    cdesc:String,
+    cfuel:String,
+    fdate:String,
+    tdate:String,
+
+});
+app.post('/booking',(req,res)=>{
+    var item = req.body._id;
+    var result = BookModel.save({_id:item},(error,data)=>{
+        console.log(req.body);
+        let query = Object.keys(req.body).map(key => key + '=' + req.body[key]).join('&');
+        console.log(query.includes("startTime") + " " + query.includes("endTime"));
+        if(query.includes("startTime") && query.includes("endTime")){   
+            console.log(req.body.startTime);
+            Booking.find( {"$or" : [{"booking_startTime" : {"$gte" : req.body.startTime, "$lt" : req.body.endTime}},{ "booking_endTime" : {"$gt" : req.body.startTime, "$lt" : req.body.endTime }}]},res);
+        }
+        else{    
+            Booking.find(req.body,res);
+        }
+    });
+
+});
+
+       
+    
 
 
 app.post('/rentregister',(req,res)=>{
@@ -137,7 +174,7 @@ app.get('/login',(req,res)=>{
 
 });
 
-const APIurl1 = "http://localhost:5566/login";
+const APIurl1 = "http://localhost:3003/login";
 
 app.post('/rentlogin',(req,res)=>{
     var item1 = req.body.uemail;
@@ -224,6 +261,33 @@ app.get('/vcar',(req,res)=>{
     });
 });
 
+app.post('/addbookcar',(req,res)=>{
+    console.log(req.body);
+    var Car1= new CarModel(req.body);
+    var result = Car1.save( (error,data)=>{
+        if(error){
+            throw error;
+            res.send(error);
+        }
+        else{
+            res.send('add car');
+        }
+    });
+});
+app.get('/vcar1',(req,res)=>{
+    var result = CarModel.find((error,data)=>{
+        if(error)
+        {
+            throw error;
+            res.send(error);
+        }
+        else
+        {
+            res.send(data);
+        }
+    });
+});
+
 app.post('/search',(req,res)=>{
     var item = req.body.cmodel;
     var result = CarModel.find({cmodel:item},(error,data)=>{
@@ -253,17 +317,52 @@ app.post('/search',(req,res)=>{
         }
     });
   });    
+  app.post('/delete1',(req,res)=>{
+    var item = req.body._id;
+    var result = BookModel.deleteOne({_id:item},(error,data)=>{
+        if(error)
+        {
+            throw error;
+            res.send(error);
+        }
+        else
+        {
+            res.send(data);
+        }
+    });
+  }); 
  
   app.post('/update',(req,res)=>{
     const x = req.body._id;
     const Carname= req.body.cname;
     const Model = req.body.cmodel;
     const Rent = req.body.crent;
+    const Fuel = req.body.cfuel;
     const Description = req.body.cdesc;
     const Picture = req.body.cpicture;
-
+    const Fromdate = req.body.fdate;
+    const Todate = req.body.tdate;
     console.log(x);
-    var result = CarModel.updateOne({_id:x},{$set:{cname:Carname,cmodel:Model,crent:Rent,cfuel:Fuel,cpicture:Picture,cdesc:Description}},(error,data)=>{
+    var result = CarModel.updateOne({_id:x},{$set:{cname:Carname,cmodel:Model,crent:Rent,cfuel:Fuel,cpicture:Picture,cdesc:Description,fdate:Fromdate,tdate:Todate}},(error,data)=>{
+        if(error)
+        {
+            throw error;
+            res.send(error);
+        }
+        else
+        {
+            res.send(data);
+        }
+    });
+  });
+  app.post('/update1',(req,res)=>{
+    const x = req.body._id;
+    const Model = req.body.cmodel;
+    const Fromdate = req.body.fdate;
+    const Todate = req.body.tdate;
+    console.log(x);
+    var result = BookModel.find({_id:x},{$or:{
+        crent:Rent,cfuel:Fuel,cpicture:Picture,cdesc:Description,fdate:Fromdate,tdate:Todate}},(error,data)=>{
         if(error)
         {
             throw error;
@@ -277,6 +376,6 @@ app.post('/search',(req,res)=>{
   });
  
 
-app.listen(process.env.PORT || 5566,()=>{
-    console.log("Server Running on PORT: http://localhost:5566");
+app.listen(process.env.PORT || 3003,()=>{
+    console.log("Server Running on PORT: http://localhost:3003");
 });
